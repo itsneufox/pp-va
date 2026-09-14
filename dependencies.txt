@@ -1,3 +1,6 @@
 # Required
 openmultiplayer/omp-stdlib
 IS4Code/PawnPlus:v1.5.3
+
+# Bundled headers (includes/amx_assembly)
+# https://github.com/pawn-lang/amx_assembly
