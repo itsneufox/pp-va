@@ -1,0 +1,4 @@
+*.amx
+*.lst
+__pycache__/
+*.pyc
