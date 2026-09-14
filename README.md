@@ -1,7 +1,7 @@
 # pp-va
 
 Variadic argument forwarding for Pawn using PawnPlus. Provides reusable formatting
-helpers without assembly, hook libraries, or a localization dependency.
+helpers backed by PawnPlus, plus optional direct argument spreading.
 
 ## Requirements and installation
 
@@ -10,7 +10,8 @@ helpers without assembly, hook libraries, or a localization dependency.
   pair and load the plugin. Tested with 1.5.3.
 - Pawn compiler 3.10.11 is the tested compiler.
 
-Copy `includes/pp-va.inc` into your compiler's include path, then use
+Copy the contents of `includes/` into your compiler's include path, including
+the bundled `amx_assembly/` directory, then use
 `#include <pp-va>`. This is an include library, not a separate server plugin.
 
 ## Formatting a wrapper's arguments
@@ -57,9 +58,69 @@ as `PP_Format`. `PP_FormatReturn` returns an array with `PP_VA_RETURN_SIZE` cell
 pp-va to choose another size. All three wrappers preserve the template literally
 when no optional arguments are present.
 
-For other native calls, use `PP_GetArgumentReferences()` and PawnPlus's list
-argument expansion. Arbitrary-call stack splicing and mixed explicit/forwarded
-argument lists are not provided.
+For other native calls without direct spreading, use `PP_GetArgumentReferences()`
+and PawnPlus's list argument expansion.
+
+## Direct argument spreading
+
+Direct argument spreading is enabled by default:
+
+```pawn
+#include <pp-va>
+
+stock LogMessage(const template[], AnyTag:...)
+{
+    return printf(template, ___(1));
+}
+```
+
+`___(n)` forwards the caller's arguments starting at index `n`. In this example,
+`1` skips `template`. `___` without parentheses starts at index zero. The skip
+count must be a compile-time constant. The forwarded cells must be references,
+as they are in `AnyTag:...`, arrays, and `&` parameters; skip fixed scalar values.
+
+Arguments can appear before and after a spread:
+
+```pawn
+stock PrintBetween(AnyTag:...)
+{
+    printf("%d %s %d %d", 5, ___(0), 8);
+}
+// PrintBetween("hello", 42); prints: 5 hello 42 8
+```
+
+The target must accept the expression in a variadic parameter position. This does
+not bypass Pawn's type checking or fill arbitrary fixed parameter declarations.
+Use one spread per target call. Nested calls containing their own spreads,
+recursive forwarding, and array-returning functions are supported.
+
+The required headers from [pawn-lang/amx_assembly](https://github.com/pawn-lang/amx_assembly)
+are bundled in `includes/amx_assembly/`, with their original copyright and license
+notices. No separate installation is needed. If you define `PP_VA_DISABLE_SPREAD`,
+only `pp-va.inc` is needed from this package. Spreading scans and rewrites call
+sites when PawnPlus initializes the script, which adds startup work.
+
+Tested with the 32-bit Pawn 3.10.11 interpreter on Linux/open.mp and compiler
+optimization levels `-O0` and `-O1`. `-O2`, JIT execution, and suspending a PawnPlus
+task during a spread call are not supported. Unsupported marker calls abort the
+current invocation instead of forwarding an ordinary integer by mistake.
+
+`PP_VA_MAX_NESTED_SPREADS` defaults to 4 nested spread expressions;
+`PP_VA_MAX_SPREAD_FRAMES` defaults to 128 active spread frames. Define these before
+including pp-va if needed. The standalone AMX scanner requires
+`CODE_SCAN_MAX_PATTERN >= 64`; pp-va sets it to 64 when it is not already defined.
+Allow at least 8192 cells of stack/heap for initialization with the default limits.
+
+To disable spreading, define `PP_VA_DISABLE_SPREAD` before including pp-va:
+
+```pawn
+#define PP_VA_DISABLE_SPREAD
+#include <pp-va>
+```
+
+The `PP_*` helpers still work without the AMX dependency. When moving to a compiler
+with its own spreading support, use this switch and adapt calls to the compiler's
+syntax as needed. pp-va makes no assumption about future compiler syntax.
 
 ## API
 
@@ -131,7 +192,8 @@ Use `vMAJOR.MINOR.PATCH` for stable releases, or append `-alpha.N`, `-beta.N`
 or `-rc.N` for prereleases (for example, `v1.1.0-beta.1`).
 The workflow publishes ZIP and tar.gz archives containing the include, example,
 documentation, license and dependency list, plus `SHA256SUMS` and automatically
-generated release notes. Dependencies must be installed separately.
+generated release notes. The required `amx_assembly` headers are included;
+open.mp and PawnPlus must be installed separately.
 
 ## Tests
 
@@ -150,9 +212,14 @@ localhost port. It never launches your real gamemode or connects to a database.
 Tests cover printf output, scalar/string forwarding, nested callers, array-returning functions,
 no-argument templates, empty strings, bounded output and PawnPlus dynamic formats.
 
+To test spreading with the bundled AMX headers, add `--spread`. Run with
+`--optimization 0` and `--optimization 1` to check both supported modes. The normal
+suite verifies that `___` is not defined when `PP_VA_DISABLE_SPREAD` is defined.
+
 ## License
 
-[MIT](LICENSE) © 2026 itsneufox.
+The original code is available under [MIT](LICENSE) © 2026 itsneufox.
+The `pp-va.inc` contains code adapted from YSI's y_va by Alex "Y_Less" Cole and contributors and is distributed under [MPL 1.1](LICENSE). Attribution is preserved in the source header. The bundled AMX headers retain their original license notices.
 
 ## AI disclosure
 

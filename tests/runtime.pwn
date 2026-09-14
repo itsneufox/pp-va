@@ -1,5 +1,9 @@
 #pragma dynamic 16384
+#define PP_VA_DISABLE_SPREAD
 #include <pp-va>
+#if defined ___
+    #error PP_VA_DISABLE_SPREAD must leave ___ undefined.
+#endif
 
 new failures;
 
