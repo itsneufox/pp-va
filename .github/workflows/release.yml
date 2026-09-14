@@ -1,0 +1,67 @@
+name: Release pp-va
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Package and publish
+    if: ${{ !github.event.deleted }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TAG_NAME: ${{ github.ref_name }}
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Validate release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.(0|[1-9][0-9]*))?$ ]]; then
+            echo 'Expected vMAJOR.MINOR.PATCH, optionally followed by -alpha.N, -beta.N or -rc.N' >&2
+            exit 1
+          fi
+
+      - name: Package library
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-files
+          package="pp-va-${TAG_NAME}"
+          files=(includes example README.md LICENSE dependencies.txt)
+          git archive --format=zip --prefix="${package}/" \
+            --output="release-files/${package}.zip" HEAD -- "${files[@]}"
+          git archive --format=tar.gz --prefix="${package}/" \
+            --output="release-files/${package}.tar.gz" HEAD -- "${files[@]}"
+          cd release-files
+          sha256sum "${package}.zip" "${package}.tar.gz" > SHA256SUMS
+
+      - name: Publish GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          release_args=(
+            "$TAG_NAME"
+            --verify-tag
+            --title "pp-va ${TAG_NAME}"
+            --generate-notes
+          )
+          if [[ "$TAG_NAME" == *-* ]]; then
+            release_args+=(--prerelease --latest=false)
+          fi
+          gh release create "${release_args[@]}" release-files/*

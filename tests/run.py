@@ -14,6 +14,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--server-root", type=Path, required=True, help="open.mp installation containing omp-server, qawno, components and plugins")
     parser.add_argument("--components-dir", type=Path, help="override the default server-root/components directory")
+    parser.add_argument("--include-dir", type=Path, action="append", default=[], help="additional compiler include directory (repeatable)")
     args = parser.parse_args()
     repo = args.server_root.resolve()
     library = Path(__file__).resolve().parents[1]
@@ -53,6 +54,7 @@ def main():
                 str(repo / "qawno/pawncc"),
                 str(library / "tests/runtime.pwn"),
                 f"-i{library / 'includes'}",
+                *(f"-i{directory.resolve()}" for directory in args.include_dir),
                 "-Dgamemodes", "-;+", "-(+", "-d3", "-Z+",
                 f"-o{runtime / 'gamemodes/pp_va_runtime.amx'}",
             ],

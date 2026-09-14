@@ -118,7 +118,25 @@ stock Outer(const template[], OPEN_MP_TAGS:...)
 }
 ```
 
+## Releases
+
+Push a version tag on a commit containing the release workflow to publish a GitHub release:
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+Use `vMAJOR.MINOR.PATCH` for stable releases, or append `-alpha.N`, `-beta.N`
+or `-rc.N` for prereleases (for example, `v1.1.0-beta.1`).
+The workflow publishes ZIP and tar.gz archives containing the include, example,
+documentation, license and dependency list, plus `SHA256SUMS` and automatically
+generated release notes. Dependencies must be installed separately.
+
 ## Tests
+
+Use `--include-dir /path/to/includes` when dependencies are installed outside
+the compiler's default include directory. This option can be repeated.
 
 ```bash
 python3 tests/run.py --server-root /path/to/openmp-server
