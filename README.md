@@ -124,12 +124,17 @@ stock Outer(const template[], OPEN_MP_TAGS:...)
 python3 tests/run.py --server-root /path/to/openmp-server
 ```
 
-The server directory must contain `omp-server`, `qawno/pawncc`, standard components
-in `components/LINUX/default`, and PawnPlus and CrashDetect in `plugins`.
+The Linux server directory must contain `omp-server`, `qawno/pawncc`, standard
+components directly in `components/`, and PawnPlus and CrashDetect in `plugins/`.
+For a custom component layout, pass `--components-dir /path/to/components`.
 The runner compiles a fixture and starts a temporary server on an ephemeral
 localhost port. It never launches your real gamemode or connects to a database.
 Tests cover printf output, scalar/string forwarding, nested callers, array-returning functions,
 no-argument templates, empty strings, bounded output and PawnPlus dynamic formats.
+
+## License
+
+[MIT](LICENSE) © 2026 itsneufox.
 
 ## AI disclosure
 

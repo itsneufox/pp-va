@@ -13,14 +13,19 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--server-root", type=Path, required=True, help="open.mp installation containing omp-server, qawno, components and plugins")
+    parser.add_argument("--components-dir", type=Path, help="override the default server-root/components directory")
     args = parser.parse_args()
     repo = args.server_root.resolve()
     library = Path(__file__).resolve().parents[1]
+    components_dir = args.components_dir.resolve() if args.components_dir else repo / "components"
+    components = sorted(components_dir.glob("*.so"))
+    if not components:
+        parser.error(f"No component .so files found in {components_dir}; use --components-dir for a custom layout")
     with tempfile.TemporaryDirectory(prefix="pp-va-tests-") as temporary:
         runtime = Path(temporary)
         for directory in ("components", "plugins", "gamemodes", "scriptfiles"):
             (runtime / directory).mkdir()
-        for component in (repo / "components/LINUX/default").glob("*.so"):
+        for component in components:
             (runtime / "components" / component.name).symlink_to(component)
         for plugin in ("crashdetect", "PawnPlus"):
             (runtime / "plugins" / f"{plugin}.so").symlink_to(repo / "plugins" / f"{plugin}.so")
